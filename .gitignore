@@ -6,6 +6,7 @@ build/
 out/
 .next/
 .turbo/
+storybook-static/
 
 .env
 .env.*
