@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 
 import { DuneNotConnectedError, getDuneClient } from "@arrakis/fremen";
-import { DuneMCP, DuneSpiceError } from "@arrakis/spice";
+import { DuneSpiceError, type DuneMCP } from "@arrakis/spice";
 
 import { GasTracker } from "@/components/GasTracker";
 import { auth } from "@/lib/auth";
