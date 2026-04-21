@@ -1,12 +1,34 @@
 import { DuneConnectionProvider, DuneConnectionStatus } from "@arrakis/fremen/react";
 import type { Meta, StoryObj } from "@storybook/react";
+import * as React from "react";
 
-import { mockAuthClient, type MockState } from "./mock-auth-client.js";
+import {
+  installFetchMock,
+  mockAuthClient,
+  uninstallFetchMock,
+  type MockState,
+} from "./mock-auth-client.js";
 
 type Args = React.ComponentProps<typeof DuneConnectionStatus> & {
   sessionState: MockState;
   username: string;
 };
+
+function Harness({
+  sessionState,
+  username,
+  ...args
+}: Args): React.ReactElement {
+  React.useLayoutEffect(() => {
+    installFetchMock(sessionState, username);
+    return () => uninstallFetchMock();
+  }, [sessionState, username]);
+  return (
+    <DuneConnectionProvider authClient={mockAuthClient(sessionState)}>
+      <DuneConnectionStatus {...args} />
+    </DuneConnectionProvider>
+  );
+}
 
 const meta: Meta<Args> = {
   title: "fremen/DuneConnectionStatus",
@@ -23,11 +45,7 @@ const meta: Meta<Args> = {
     username: "alice",
     hideDisconnect: false,
   },
-  render: ({ sessionState, username, ...args }) => (
-    <DuneConnectionProvider authClient={mockAuthClient(sessionState, username)}>
-      <DuneConnectionStatus {...args} />
-    </DuneConnectionProvider>
-  ),
+  render: (args) => <Harness {...args} />,
 };
 
 export default meta;
