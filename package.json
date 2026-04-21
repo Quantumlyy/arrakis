@@ -14,7 +14,8 @@
     "test": "turbo test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "demo": "turbo dev --filter=muaddib"
+    "demo": "turbo dev --filter=muaddib",
+    "docs": "turbo dev --filter=sietch"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp"],
