@@ -2,43 +2,30 @@ import * as React from "react";
 
 /**
  * Minimum surface `@arrakis/fremen/react` needs from the host's authClient.
- * Keeping this narrow lets hosts use their own Better Auth client instance
- * without us importing `better-auth/client` at build time.
+ * The hook no longer depends on `oauth2.link` / `unlinkAccount` — it talks
+ * to fremen's own `/dune/*` endpoints directly — so the only requirement is
+ * a working `useSession()` to drive loading states.
  */
 export interface FremenAuthClient {
   useSession(): {
-    data: {
-      user?: {
-        id: string;
-        name?: string | null;
-        accounts?: Array<{
-          providerId: string;
-          accountId?: string;
-          username?: string | null;
-        }>;
-      } | null;
-    } | null;
+    data:
+      | {
+          user?: { id: string; name?: string | null } | null;
+        }
+      | null
+      | undefined;
     isPending: boolean;
   };
-  oauth2: {
-    link(args: {
-      providerId: string;
-      callbackURL?: string;
-    }): Promise<unknown> | unknown;
-    unlink?(args: { providerId: string }): Promise<unknown> | unknown;
-  };
-  /**
-   * Better Auth exposes account unlink at the client root (`authClient.unlinkAccount`)
-   * rather than under `oauth2`. Fremen prefers this when present.
-   */
-  unlinkAccount?(args: { providerId: string }): Promise<unknown> | unknown;
 }
 
 export interface DuneConnectionContextValue {
   authClient: FremenAuthClient;
-  /** Provider id to match against `user.accounts[].providerId`. */
-  providerId: string;
-  /** Fallback callback URL for `oauth2.link` when hosts don't pass one. */
+  /**
+   * Base path fremen endpoints are mounted under, e.g. `/api/auth`. The hook
+   * POSTs to `${basePath}/dune/link` and friends.
+   */
+  basePath: string;
+  /** Fallback callback URL passed to `/dune/link` when callers don't specify one. */
   defaultCallbackURL?: string;
 }
 
@@ -48,7 +35,11 @@ const DuneConnectionContext = React.createContext<
 
 export interface DuneConnectionProviderProps {
   authClient: FremenAuthClient;
-  providerId?: string;
+  /**
+   * Base path fremen endpoints are mounted under. Defaults to `/api/auth`,
+   * matching Better Auth's default basePath.
+   */
+  basePath?: string;
   defaultCallbackURL?: string;
   children: React.ReactNode;
 }
@@ -73,13 +64,13 @@ export interface DuneConnectionProviderProps {
  */
 export function DuneConnectionProvider({
   authClient,
-  providerId = "dune",
+  basePath = "/api/auth",
   defaultCallbackURL,
   children,
 }: DuneConnectionProviderProps): React.ReactElement {
   const value = React.useMemo<DuneConnectionContextValue>(
-    () => ({ authClient, providerId, defaultCallbackURL }),
-    [authClient, providerId, defaultCallbackURL],
+    () => ({ authClient, basePath, defaultCallbackURL }),
+    [authClient, basePath, defaultCallbackURL],
   );
   return (
     <DuneConnectionContext.Provider value={value}>
