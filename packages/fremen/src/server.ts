@@ -3,7 +3,8 @@ import { DuneMCP } from "@arrakis/spice";
 import { DUNE_MCP_URL, DUNE_PROVIDER_ID } from "./constants.js";
 import { DuneNotConnectedError } from "./errors.js";
 import type { DuneFremenMeta } from "./plugin.js";
-import { refreshIfNeeded, type DuneAccountTokens } from "./refresh.js";
+import type { DuneAccountTokens } from "./refresh.js";
+import { createRefreshingTokenProvider } from "./token-provider.js";
 
 /**
  * The subset of Better Auth's account row shape this module cares about.
@@ -143,27 +144,26 @@ export async function getDuneClient(
     );
   }
 
-  const tokens = await refreshIfNeeded({
-    account: {
+  const getAccessToken = createRefreshingTokenProvider({
+    initial: {
       accessToken: row.accessToken,
       refreshToken: row.refreshToken ?? null,
       accessTokenExpiresAt: row.accessTokenExpiresAt ?? null,
     },
     clientId,
     now: opts.now,
+    persist: async (refreshed) => {
+      await authCtx.internalAdapter.updateAccount(row.id, {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
+      });
+    },
   });
-
-  if (tokens.refreshed) {
-    await authCtx.internalAdapter.updateAccount(row.id, {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-    });
-  }
 
   return new DuneMCP({
     mcpUrl: opts.mcpUrl ?? DUNE_MCP_URL,
-    getAccessToken: async () => tokens.accessToken,
+    getAccessToken,
   });
 }
 
@@ -201,23 +201,27 @@ export async function getDuneClientWithStore(
     throw new DuneNotConnectedError();
   }
 
-  const tokens = await refreshIfNeeded({
-    account,
+  const userId = opts.session.user.id;
+  const getAccessToken = createRefreshingTokenProvider({
+    initial: {
+      accessToken: account.accessToken,
+      refreshToken: account.refreshToken,
+      accessTokenExpiresAt: account.accessTokenExpiresAt,
+    },
     clientId: opts.clientId,
     now: opts.now,
+    persist: async (refreshed) => {
+      await opts.accountStore.persistRefreshedAccount(userId, {
+        ...account,
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
+      });
+    },
   });
-
-  if (tokens.refreshed) {
-    await opts.accountStore.persistRefreshedAccount(opts.session.user.id, {
-      ...account,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-    });
-  }
 
   return new DuneMCP({
     mcpUrl: opts.mcpUrl ?? DUNE_MCP_URL,
-    getAccessToken: async () => tokens.accessToken,
+    getAccessToken,
   });
 }
