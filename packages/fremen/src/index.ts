@@ -1,12 +1,20 @@
-export { duneConnection, type DuneConnectionOptions } from "./plugin.js";
+export {
+  duneConnection,
+  type DuneConnectionOptions,
+  type DuneFremenMeta,
+} from "./plugin.js";
 export {
   getDuneClient,
+  getDuneClientWithStore,
   type GetDuneClientOptions,
+  type GetDuneClientWithStoreOptions,
   type AccountStore,
+  type BetterAuthLike,
   type DuneConnectedAccount,
 } from "./server.js";
 export {
   getOrRegisterDuneClient,
+  duneClientStoreFromAdapter,
   type DuneClientStore,
   type GetOrRegisterOptions,
 } from "./dcr.js";

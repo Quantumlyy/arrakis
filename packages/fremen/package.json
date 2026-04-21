@@ -28,10 +28,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@arrakis/spice": "workspace:*"
+    "@arrakis/spice": "workspace:*",
+    "zod": "^4.0.0"
   },
   "peerDependencies": {
-    "better-auth": "^1.2.0",
+    "better-auth": "^1.6.0",
     "react": ">=18"
   },
   "peerDependenciesMeta": {

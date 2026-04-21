@@ -14,6 +14,45 @@ export interface DuneClientStore {
   insert(row: Omit<DuneOAuthClientRow, "id">): Promise<DuneOAuthClientRow>;
 }
 
+/**
+ * Better Auth's `ctx.context.adapter` surface we actually touch. Keeping a
+ * local type means we don't have to import `@better-auth/core` at build time
+ * just for this bridge.
+ */
+interface AdapterLike {
+  findOne<T>(input: {
+    model: string;
+    where: { field: string; value: string | number | boolean | Date }[];
+  }): Promise<T | null>;
+  create<T extends Record<string, unknown>, R = T>(input: {
+    model: string;
+    data: Omit<T, "id">;
+  }): Promise<R>;
+}
+
+/**
+ * Build a `DuneClientStore` backed by a Better Auth adapter. The plugin uses
+ * this to persist DCR results to the host's `duneOAuthClient` table.
+ */
+export function duneClientStoreFromAdapter(
+  adapter: AdapterLike,
+): DuneClientStore {
+  return {
+    async findByRedirectUri(redirectUri) {
+      return await adapter.findOne<DuneOAuthClientRow>({
+        model: "duneOAuthClient",
+        where: [{ field: "redirectUri", value: redirectUri }],
+      });
+    },
+    async insert(row) {
+      return await adapter.create<DuneOAuthClientRow>({
+        model: "duneOAuthClient",
+        data: row,
+      });
+    },
+  };
+}
+
 export interface GetOrRegisterOptions {
   store: DuneClientStore;
   redirectUri: string;

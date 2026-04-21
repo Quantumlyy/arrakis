@@ -23,4 +23,4 @@ export const DUNE_MCP_URL = "https://api.dune.com/mcp/v1";
  */
 export const REFRESH_BUFFER_MS = 30_000;
 
-export const DEFAULT_CALLBACK_PATH = "/api/auth/oauth2/callback/dune";
+export const DEFAULT_CALLBACK_PATH = "/api/auth/dune/callback";
