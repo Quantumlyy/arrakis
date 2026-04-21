@@ -7,6 +7,7 @@ out/
 .next/
 .turbo/
 storybook-static/
+.astro/
 
 .env
 .env.*
