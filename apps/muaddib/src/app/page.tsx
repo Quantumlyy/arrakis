@@ -1,7 +1,8 @@
+import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 
 import { DuneNotConnectedError, getDuneClient } from "@arrakis/fremen";
-import { DuneSpiceError, type DuneMCP } from "@arrakis/spice";
+import { DuneSpiceError } from "@arrakis/spice";
 
 import { GasTracker } from "@/components/GasTracker";
 import { auth } from "@/lib/auth";
@@ -11,7 +12,23 @@ import {
   isAnonymousConfigured,
 } from "@/lib/dune";
 
-export const revalidate = 900;
+// Reading headers() + the per-user connected path force this route dynamic,
+// so a route-level `revalidate` wouldn't apply to the anonymous Dune query.
+// Cache that query explicitly instead: one shared result per queryId, refreshed
+// every 15 minutes, so anonymous visitors don't burn the shared key on each hit.
+const getAnonymousRows = unstable_cache(
+  async (queryId: number) => {
+    const dune = getAnonymousDune();
+    try {
+      const result = await dune.runQueryAndWait(queryId, { timeoutMs: 45_000 });
+      return result.rows ?? [];
+    } finally {
+      await dune.close();
+    }
+  },
+  ["muaddib:anonymous-rows"],
+  { revalidate: 900 },
+);
 
 export default async function HomePage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -33,51 +50,68 @@ export default async function HomePage() {
     );
   }
 
-  // Prefer the signed-in user's linked Dune credits. Fall back to the
-  // anonymous API key only when no one's connected — and only if the
-  // operator configured a shared key.
-  let dune: DuneMCP | undefined;
-  let mode: "connected" | "anonymous" = "anonymous";
+  // Prefer the signed-in user's linked Dune credits — their query runs every
+  // request against their own credits. Fall back to the cached anonymous path
+  // when no one's connected.
   try {
-    dune = await getDuneClient({ auth, session });
-    mode = "connected";
+    const connected = await getDuneClient({ auth, session });
+    try {
+      const result = await connected.runQueryAndWait(queryId, {
+        timeoutMs: 45_000,
+      });
+      const rows = result.rows ?? [];
+      return (
+        <main>
+          <Hero signedIn mode="connected" queryId={queryId} rowCount={rows.length} />
+          <div className="card">
+            <GasTracker rows={rows} />
+          </div>
+        </main>
+      );
+    } catch (err) {
+      return (
+        <main>
+          <Hero signedIn mode="connected" queryId={queryId} />
+          <div className="banner banner--danger">
+            <h3>Query failed</h3>
+            <p>{formatError(err)}</p>
+          </div>
+        </main>
+      );
+    } finally {
+      await connected.close();
+    }
   } catch (err) {
     if (!(err instanceof DuneNotConnectedError)) throw err;
   }
 
-  if (!dune) {
-    if (!isAnonymousConfigured()) {
-      return (
-        <main>
-          <Hero
-            signedIn={Boolean(session?.user)}
-            mode="anonymous"
-            queryId={queryId}
-          />
-          <div className="banner">
-            <h3>No Dune credentials available</h3>
-            <p>
-              {session?.user
-                ? "You're signed in but haven't connected your Dune account yet. Use the Connect Dune button above, or set DUNE_API_KEY to enable the shared anonymous path."
-                : "Sign in and connect a Dune account, or set DUNE_API_KEY on the server to enable the shared anonymous path."}
-            </p>
-          </div>
-        </main>
-      );
-    }
-    dune = getAnonymousDune();
-    mode = "anonymous";
-  }
-
-  try {
-    const result = await dune.runQueryAndWait(queryId, { timeoutMs: 45_000 });
-    const rows = result.rows ?? [];
-
+  if (!isAnonymousConfigured()) {
     return (
       <main>
         <Hero
           signedIn={Boolean(session?.user)}
-          mode={mode}
+          mode="anonymous"
+          queryId={queryId}
+        />
+        <div className="banner">
+          <h3>No Dune credentials available</h3>
+          <p>
+            {session?.user
+              ? "You're signed in but haven't connected your Dune account yet. Use the Connect Dune button above, or set DUNE_API_KEY to enable the shared anonymous path."
+              : "Sign in and connect a Dune account, or set DUNE_API_KEY on the server to enable the shared anonymous path."}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  try {
+    const rows = await getAnonymousRows(queryId);
+    return (
+      <main>
+        <Hero
+          signedIn={Boolean(session?.user)}
+          mode="anonymous"
           queryId={queryId}
           rowCount={rows.length}
         />
@@ -89,15 +123,17 @@ export default async function HomePage() {
   } catch (err) {
     return (
       <main>
-        <Hero signedIn={Boolean(session?.user)} mode={mode} queryId={queryId} />
+        <Hero
+          signedIn={Boolean(session?.user)}
+          mode="anonymous"
+          queryId={queryId}
+        />
         <div className="banner banner--danger">
           <h3>Query failed</h3>
           <p>{formatError(err)}</p>
         </div>
       </main>
     );
-  } finally {
-    await dune.close();
   }
 }
 
@@ -130,7 +166,7 @@ function Hero({
       <div className="badges">
         <span className="badge">{signedIn ? "auth · signed in" : "auth · anonymous"}</span>
         <span className="badge">{authBadge}</span>
-        <span className="badge">ISR · 15 min</span>
+        {mode === "anonymous" && <span className="badge">cache · 15 min</span>}
         {queryId !== undefined && <span className="badge">query #{queryId}</span>}
         {rowCount !== undefined && <span className="badge">{rowCount} rows</span>}
       </div>
