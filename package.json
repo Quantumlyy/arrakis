@@ -17,7 +17,7 @@
     "demo": "turbo dev --filter=muaddib"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp"]
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
