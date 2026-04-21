@@ -50,7 +50,17 @@ export function useDuneConnection(): UseDuneConnectionReturn {
   );
 
   const disconnect = React.useCallback(async () => {
-    await authClient.oauth2.unlink({ providerId });
+    if (authClient.unlinkAccount) {
+      await authClient.unlinkAccount({ providerId });
+      return;
+    }
+    if (authClient.oauth2.unlink) {
+      await authClient.oauth2.unlink({ providerId });
+      return;
+    }
+    throw new Error(
+      "@arrakis/fremen/react: authClient has neither `unlinkAccount` nor `oauth2.unlink` — host must expose one to support disconnecting.",
+    );
   }, [authClient, providerId]);
 
   return {

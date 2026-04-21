@@ -25,8 +25,13 @@ export interface FremenAuthClient {
       providerId: string;
       callbackURL?: string;
     }): Promise<unknown> | unknown;
-    unlink(args: { providerId: string }): Promise<unknown> | unknown;
+    unlink?(args: { providerId: string }): Promise<unknown> | unknown;
   };
+  /**
+   * Better Auth exposes account unlink at the client root (`authClient.unlinkAccount`)
+   * rather than under `oauth2`. Fremen prefers this when present.
+   */
+  unlinkAccount?(args: { providerId: string }): Promise<unknown> | unknown;
 }
 
 export interface DuneConnectionContextValue {
