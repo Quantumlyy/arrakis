@@ -1,0 +1,141 @@
+/**
+ * @arrakis/fremen component styles. Plain CSS, no Tailwind — works anywhere.
+ * Every color + radius + spacing value is a CSS custom property, so hosts
+ * can override from their own stylesheet.
+ */
+
+:root {
+  --arrakis-color-brand: #ff5b29;
+  --arrakis-color-brand-hover: #ff7b4d;
+  --arrakis-color-brand-fg: #ffffff;
+  --arrakis-color-surface: #ffffff;
+  --arrakis-color-surface-muted: #f4f4f5;
+  --arrakis-color-border: #e5e7eb;
+  --arrakis-color-text: #111827;
+  --arrakis-color-text-muted: #6b7280;
+  --arrakis-color-danger: #dc2626;
+  --arrakis-color-success: #16a34a;
+  --arrakis-radius: 0.5rem;
+  --arrakis-radius-sm: 0.375rem;
+  --arrakis-font: inherit;
+  --arrakis-duration: 120ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --arrakis-color-surface: #0b0d10;
+    --arrakis-color-surface-muted: #17191d;
+    --arrakis-color-border: #27292e;
+    --arrakis-color-text: #f4f4f5;
+    --arrakis-color-text-muted: #9ca3af;
+  }
+}
+
+.arrakis-connect-dune {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-family: var(--arrakis-font);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--arrakis-radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--arrakis-duration),
+    color var(--arrakis-duration),
+    border-color var(--arrakis-duration),
+    opacity var(--arrakis-duration);
+}
+
+.arrakis-connect-dune:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.arrakis-connect-dune[data-variant="default"] {
+  background: var(--arrakis-color-brand);
+  color: var(--arrakis-color-brand-fg);
+  border-color: var(--arrakis-color-brand);
+}
+
+.arrakis-connect-dune[data-variant="default"]:hover:not(:disabled) {
+  background: var(--arrakis-color-brand-hover);
+  border-color: var(--arrakis-color-brand-hover);
+}
+
+.arrakis-connect-dune[data-variant="outline"] {
+  background: transparent;
+  color: var(--arrakis-color-text);
+  border-color: var(--arrakis-color-border);
+}
+
+.arrakis-connect-dune[data-variant="outline"]:hover:not(:disabled) {
+  border-color: var(--arrakis-color-brand);
+  color: var(--arrakis-color-brand);
+}
+
+.arrakis-connect-dune[data-variant="inline"] {
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--arrakis-color-brand);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.arrakis-connect-dune[data-variant="inline"]:hover:not(:disabled) {
+  color: var(--arrakis-color-brand-hover);
+}
+
+.arrakis-connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--arrakis-color-text-muted);
+  background: var(--arrakis-color-surface-muted);
+  border: 1px solid var(--arrakis-color-border);
+  border-radius: var(--arrakis-radius-sm);
+}
+
+.arrakis-connection-status[data-connected="true"] {
+  color: var(--arrakis-color-text);
+}
+
+.arrakis-connection-status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--arrakis-color-text-muted);
+  display: inline-block;
+}
+
+.arrakis-connection-status[data-connected="true"] .arrakis-connection-status__dot {
+  background: var(--arrakis-color-success);
+}
+
+.arrakis-connection-status__disconnect {
+  margin-left: 0.25rem;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--arrakis-color-danger);
+  cursor: pointer;
+  padding: 0;
+}
+
+.arrakis-connection-status__disconnect:hover {
+  text-decoration: underline;
+}
+
+.arrakis-logo-mark {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
