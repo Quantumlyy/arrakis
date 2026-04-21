@@ -1,4 +1,3 @@
-export type { UsageInfo, ExecutionHandle, ExecutionResult } from "./schemas.js";
 export type { TokenProvider } from "./transport.js";
 
 interface DuneMCPBaseOptions {

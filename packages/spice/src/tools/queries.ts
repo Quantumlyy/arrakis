@@ -5,21 +5,26 @@ import {
   EXECUTION_TERMINAL_STATES,
   ExecutionHandleSchema,
   ExecutionResultSchema,
+  QueryMetaSchema,
   type ExecutionHandle,
   type ExecutionResult,
+  type QueryMeta,
 } from "../schemas.js";
 import type { RunQueryAndWaitOptions } from "../types.js";
 
 export const TOOL_EXECUTE_QUERY_BY_ID = "executeQueryById";
 export const TOOL_GET_EXECUTION_RESULTS = "getExecutionResults";
+export const TOOL_CREATE_DUNE_QUERY = "createDuneQuery";
+export const TOOL_GET_DUNE_QUERY = "getDuneQuery";
+export const TOOL_UPDATE_DUNE_QUERY = "updateDuneQuery";
 
 const DEFAULT_POLL_MS = 1_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
 
 /**
- * Kicks off an execution of a saved Dune query. Returns a handle containing
- * `executionId`, which can be fed to `getExecutionResults` or resolved via
- * `runQueryAndWait`.
+ * Kick off an execution of a saved query. Returns a handle whose
+ * `executionId` can be fed to {@link getExecutionResults} or resolved via
+ * {@link runQueryAndWait}.
  */
 export async function executeQueryById(
   client: DuneMCP,
@@ -42,10 +47,56 @@ export async function getExecutionResults(
   });
 }
 
+export interface CreateQueryInput {
+  name: string;
+  query: string;
+  description?: string;
+  isPrivate?: boolean;
+  parameters?: Array<Record<string, unknown>>;
+  tags?: string[];
+}
+
 /**
- * Executes a saved query and polls `getExecutionResults` until a terminal
- * state is reached. Throws `DuneExecutionTimeoutError` if `timeoutMs` elapses
- * first, or `DuneToolError` if the execution ends in a non-success state.
+ * Create and save a new Dune query. The returned metadata carries the
+ * `queryId` used by {@link executeQueryById}.
+ */
+export async function createDuneQuery(
+  client: DuneMCP,
+  input: CreateQueryInput,
+): Promise<QueryMeta> {
+  return client.callParsed(TOOL_CREATE_DUNE_QUERY, QueryMetaSchema, { ...input });
+}
+
+/** Fetch SQL and metadata for a saved query. */
+export async function getDuneQuery(client: DuneMCP, id: number): Promise<QueryMeta> {
+  return client.callParsed(TOOL_GET_DUNE_QUERY, QueryMetaSchema, { queryId: id });
+}
+
+export interface UpdateQueryInput {
+  name?: string;
+  description?: string;
+  query?: string;
+  isPrivate?: boolean;
+  parameters?: Array<Record<string, unknown>>;
+  tags?: string[];
+}
+
+/** Update SQL, title, description, tags, or parameters of an existing query. */
+export async function updateDuneQuery(
+  client: DuneMCP,
+  id: number,
+  patch: UpdateQueryInput,
+): Promise<QueryMeta> {
+  return client.callParsed(TOOL_UPDATE_DUNE_QUERY, QueryMetaSchema, {
+    queryId: id,
+    ...patch,
+  });
+}
+
+/**
+ * Execute a saved query and poll `getExecutionResults` until a terminal
+ * state. Throws {@link DuneExecutionTimeoutError} if `timeoutMs` elapses
+ * first, or `DuneToolError` on a non-success terminal state.
  */
 export async function runQueryAndWait(
   client: DuneMCP,
