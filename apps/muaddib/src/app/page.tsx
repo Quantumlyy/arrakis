@@ -14,7 +14,7 @@ export default async function HomePage() {
           <h3>Demo not configured</h3>
           <p>
             Copy <code>apps/muaddib/.env.example</code> to <code>apps/muaddib/.env.local</code> and
-            fill in <code>DUNE_ACCESS_TOKEN</code> and <code>DUNE_QUERY_ID</code>, then restart{" "}
+            fill in <code>DUNE_API_KEY</code> and <code>DUNE_QUERY_ID</code>, then restart{" "}
             <code>pnpm demo</code>.
           </p>
         </div>

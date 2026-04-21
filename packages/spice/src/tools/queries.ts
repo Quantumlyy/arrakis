@@ -10,8 +10,8 @@ import {
 } from "../schemas.js";
 import type { RunQueryAndWaitOptions } from "../types.js";
 
-export const TOOL_EXECUTE_QUERY = "execute_query";
-export const TOOL_GET_EXECUTION_RESULTS = "get_execution_results";
+export const TOOL_EXECUTE_QUERY_BY_ID = "executeQueryById";
+export const TOOL_GET_EXECUTION_RESULTS = "getExecutionResults";
 
 const DEFAULT_POLL_MS = 1_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -30,7 +30,7 @@ export async function executeQueryById(
   if (params && Object.keys(params).length > 0) {
     args.parameters = params;
   }
-  return client.callParsed(TOOL_EXECUTE_QUERY, ExecutionHandleSchema, args);
+  return client.callParsed(TOOL_EXECUTE_QUERY_BY_ID, ExecutionHandleSchema, args);
 }
 
 export async function getExecutionResults(

@@ -130,14 +130,14 @@ describe("DuneMCP", () => {
     expect(result.rows).toEqual([{ gas_price: 12.3 }]);
     expect(mocks.callTool).toHaveBeenCalledTimes(4);
     expect(mocks.callTool).toHaveBeenNthCalledWith(1, {
-      name: "execute_query",
+      name: "executeQueryById",
       arguments: { queryId: 42 },
     });
   });
 
   it("runQueryAndWait throws DuneExecutionTimeoutError when deadline elapses", async () => {
     mocks.callTool.mockImplementation(async (req: { name: string }) => {
-      if (req.name === "execute_query") {
+      if (req.name === "executeQueryById") {
         return structuredResult({ executionId: "exec-slow", state: "QUERY_STATE_PENDING" });
       }
       return structuredResult({ executionId: "exec-slow", state: "QUERY_STATE_EXECUTING" });

@@ -10,7 +10,7 @@ import {
   getExecutionResults,
   runQueryAndWait,
 } from "./tools/queries.js";
-import { createDuneTransport, DEFAULT_MCP_URL } from "./transport.js";
+import { createDuneTransport, DEFAULT_MCP_URL, type AuthMode } from "./transport.js";
 import type { DuneMCPOptions, RunQueryAndWaitOptions } from "./types.js";
 
 const CLIENT_INFO_DEFAULT = { name: "@arrakis/spice", version: "0.0.0" };
@@ -26,18 +26,19 @@ const CLIENT_INFO_DEFAULT = { name: "@arrakis/spice", version: "0.0.0" };
  * surface out of the class lets us tree-shake unused tools.
  */
 export class DuneMCP {
-  private readonly options: Required<Pick<DuneMCPOptions, "mcpUrl">> & DuneMCPOptions;
   private readonly url: URL;
+  private readonly auth: AuthMode;
+  private readonly clientInfo: { name: string; version: string };
   private client: Client | undefined;
   private transport: StreamableHTTPClientTransport | undefined;
   private connectPromise: Promise<void> | undefined;
 
   constructor(options: DuneMCPOptions) {
-    this.options = {
-      mcpUrl: DEFAULT_MCP_URL,
-      ...options,
-    };
-    this.url = new URL(this.options.mcpUrl);
+    this.url = new URL(options.mcpUrl ?? DEFAULT_MCP_URL);
+    this.clientInfo = options.clientInfo ?? CLIENT_INFO_DEFAULT;
+    this.auth = options.getAccessToken
+      ? { kind: "oauth", getAccessToken: options.getAccessToken }
+      : { kind: "apiKey", apiKey: options.apiKey };
   }
 
   /**
@@ -51,11 +52,8 @@ export class DuneMCP {
       return this.client!;
     }
 
-    this.transport = createDuneTransport({
-      url: this.url,
-      getAccessToken: this.options.getAccessToken,
-    });
-    const client = new Client(this.options.clientInfo ?? CLIENT_INFO_DEFAULT);
+    this.transport = createDuneTransport({ url: this.url, auth: this.auth });
+    const client = new Client(this.clientInfo);
     this.connectPromise = client.connect(this.transport);
 
     try {
