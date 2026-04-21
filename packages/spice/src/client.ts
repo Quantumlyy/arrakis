@@ -3,8 +3,15 @@ import type { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/cl
 import type { z } from "zod";
 
 import { DuneSpiceError, DuneToolError } from "./errors.js";
+import type { ExecutionHandle, ExecutionResult, UsageInfo } from "./schemas.js";
+import { getUsage } from "./tools/account.js";
+import {
+  executeQueryById,
+  getExecutionResults,
+  runQueryAndWait,
+} from "./tools/queries.js";
 import { createDuneTransport, DEFAULT_MCP_URL } from "./transport.js";
-import type { DuneMCPOptions } from "./types.js";
+import type { DuneMCPOptions, RunQueryAndWaitOptions } from "./types.js";
 
 const CLIENT_INFO_DEFAULT = { name: "@arrakis/spice", version: "0.0.0" };
 
@@ -112,6 +119,22 @@ export class DuneMCP {
       throw new DuneToolError(tool, args, `response failed validation: ${parsed.error.message}`);
     }
     return parsed.data;
+  }
+
+  getUsage(): Promise<UsageInfo> {
+    return getUsage(this);
+  }
+
+  executeQueryById(id: number, params?: Record<string, unknown>): Promise<ExecutionHandle> {
+    return executeQueryById(this, id, params);
+  }
+
+  getExecutionResults(executionId: string): Promise<ExecutionResult> {
+    return getExecutionResults(this, executionId);
+  }
+
+  runQueryAndWait(id: number, opts?: RunQueryAndWaitOptions): Promise<ExecutionResult> {
+    return runQueryAndWait(this, id, opts);
   }
 
   async close(): Promise<void> {
