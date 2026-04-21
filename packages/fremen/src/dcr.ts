@@ -69,9 +69,9 @@ const inFlight = new Map<string, Promise<string>>();
  * Return the Dune `client_id` registered for `redirectUri`, running DCR on
  * miss. Concurrent calls for the same redirectUri in the same process share
  * one registration round-trip via an in-memory promise map; multi-instance
- * deployments may register twice, which is benign — the extra client_id is
- * harmless and the store's `redirectUri` unique index keeps reads
- * deterministic.
+ * deployments may register twice, and the loser's insert trips the
+ * `redirectUri` unique index — we catch that and re-read so the loser yields
+ * to the winner's `client_id` instead of surfacing a registration failure.
  *
  * @example
  * ```ts
@@ -147,14 +147,23 @@ async function registerOnce(opts: GetOrRegisterOptions): Promise<string> {
     });
   }
 
-  await opts.store.insert({
-    clientId,
-    redirectUri: opts.redirectUri,
-    appName: opts.appName,
-    createdAt: new Date(),
-  });
-
-  return clientId;
+  try {
+    await opts.store.insert({
+      clientId,
+      redirectUri: opts.redirectUri,
+      appName: opts.appName,
+      createdAt: new Date(),
+    });
+    return clientId;
+  } catch (insertErr) {
+    // Cross-instance race: another writer tripped the `redirectUri` unique
+    // index ahead of us. Re-read and yield to their clientId rather than
+    // failing /dune/link with a registration error. Our own DCR result is
+    // orphaned, which the comment on the export documents as benign.
+    const winner = await opts.store.findByRedirectUri(opts.redirectUri);
+    if (winner) return winner.clientId;
+    throw insertErr;
+  }
 }
 
 /**

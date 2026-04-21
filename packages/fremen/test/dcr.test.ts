@@ -128,4 +128,63 @@ describe("getOrRegisterDuneClient", () => {
     expect(err).toBeInstanceOf(DuneRegistrationError);
     expect((err as DuneRegistrationError).message).toMatch(/client_id/);
   });
+
+  it("yields to the winner on cross-instance race when insert trips the unique index", async () => {
+    // Simulates: we miss the read, DCR against Dune, then another instance
+    // has already written its row and our insert fails. We should re-read
+    // and return the winner's clientId rather than surfacing the insert
+    // error.
+    let insertCalls = 0;
+    const store: DuneClientStore = {
+      findByRedirectUri: async (uri) => {
+        if (insertCalls === 0) return null;
+        return {
+          id: "row-winner",
+          clientId: "client-winner",
+          redirectUri: uri,
+          appName: "A",
+          createdAt: new Date(),
+        };
+      },
+      insert: async () => {
+        insertCalls += 1;
+        throw new Error("unique constraint: duneOAuthClient.redirectUri");
+      },
+    };
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify({ client_id: "client-loser" }), {
+        status: 201,
+      })) as typeof fetch;
+
+    const clientId = await getOrRegisterDuneClient({
+      store,
+      redirectUri: "https://ex.com/cb",
+      appName: "A",
+      fetchImpl,
+    });
+
+    expect(clientId).toBe("client-winner");
+  });
+
+  it("surfaces the insert error when no row appears on re-read", async () => {
+    const store: DuneClientStore = {
+      findByRedirectUri: async () => null,
+      insert: async () => {
+        throw new Error("db offline");
+      },
+    };
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify({ client_id: "client-any" }), {
+        status: 201,
+      })) as typeof fetch;
+
+    await expect(
+      getOrRegisterDuneClient({
+        store,
+        redirectUri: "https://ex.com/cb",
+        appName: "A",
+        fetchImpl,
+      }),
+    ).rejects.toThrow("db offline");
+  });
 });
