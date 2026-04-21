@@ -11,6 +11,7 @@ A pnpm monorepo for connecting [Dune](https://dune.com) accounts to host apps th
 | [`@arrakis/spice`](./packages/spice) | Dune MCP client. Wraps `@modelcontextprotocol/sdk` with typed methods, Zod-validated outputs, and support for either API-key or user-OAuth auth. |
 | [`@arrakis/fremen`](./packages/fremen) | Better Auth plugin for the Dune OAuth flow (DCR + PKCE + refresh) plus `@arrakis/fremen/react` components (`<ConnectDune />`, `<DuneConnectionStatus />`). |
 | [`muaddib`](./apps/muaddib) | Next.js 15 demo app — email/password auth, Dune connect, and a saved query rendered server-side via `@arrakis/spice`. |
+| [`sietch`](./apps/sietch) | Astro Starlight docs site — install, quickstart, guides, API reference, and architecture notes. |
 | [`storybook`](./apps/storybook) | Storybook 8 coverage for every `@arrakis/fremen/react` component. |
 
 ## Dev setup
@@ -41,12 +42,21 @@ pnpm --filter storybook dev
 
 Open <http://localhost:6006>.
 
+### Run the docs site
+
+```bash
+pnpm docs
+```
+
+Open <http://localhost:4321>.
+
 ## Layout
 
 ```
 arrakis/
 ├── apps/
 │   ├── muaddib/             Next.js 15 demo app
+│   ├── sietch/              Astro Starlight docs site
 │   └── storybook/           Storybook 8 component preview
 ├── packages/
 │   ├── spice/               @arrakis/spice — Dune MCP client
@@ -65,9 +75,9 @@ arrakis/
 | 1 — `@arrakis/spice` (full tool surface, dual auth) | done |
 | 2 — `@arrakis/fremen` Better Auth plugin + React | done |
 | 3 — Storybook component coverage | done |
+| 4 — Starlight docs site (`apps/sietch`) | done |
 | 5 — `apps/muaddib` demo with auth + Dune connect | done |
 | 6 — CI + README | done |
-| 4 — Starlight docs site (`apps/sietch`) | planned |
 
 ## Architecture notes
 

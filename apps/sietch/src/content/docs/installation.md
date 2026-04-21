@@ -17,7 +17,7 @@ pnpm add @arrakis/spice @arrakis/fremen better-auth
 
 | Peer | Version |
 |---|---|
-| `better-auth` | `^1.2.0` |
+| `better-auth` | `^1.6.0` |
 | `react` | `>=18` (optional — only for `@arrakis/fremen/react`) |
 
 ## Environment
